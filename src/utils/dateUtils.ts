@@ -13,6 +13,11 @@ export function getStartDate(): dayjs.Dayjs {
   return dayjs(saved || DEFAULT_START_DATE)
 }
 
+// 获取学习周期周数 (默认12周)
+export function getPlanWeeks(): number {
+  return parseInt(localStorage.getItem('plan_duration_weeks') || '12')
+}
+
 // 设置开始日期
 export function setStartDate(date: string): void {
   localStorage.setItem('study_start_date', date)
@@ -22,7 +27,10 @@ export function setStartDate(date: string): void {
 
 // 获取结束日期
 export function getEndDate(): dayjs.Dayjs {
-  return getStartDate().add(83, 'day')
+  const weeks = getPlanWeeks()
+  // 总天数 = 周数 * 7 - 1 (因为第1天也算在内)
+  const totalDays = weeks * 7 - 1
+  return getStartDate().add(totalDays, 'day')
 }
 
 /**
@@ -87,8 +95,10 @@ export function getDayNumber(date: dayjs.Dayjs | Date | string = dayjs()): numbe
   
   // 如果日期在开始之前，返回 0
   if (diffDays < 1) return 0
-  // 如果超过 84 天，返回 84
-  return Math.min(84, diffDays)
+  
+  // 动态上限：总周数 * 7
+  const maxDays = getPlanWeeks() * 7
+  return Math.min(maxDays, diffDays)
 }
 
 /**
@@ -113,7 +123,8 @@ export function getDateByDayNumber(dayNumber: number): dayjs.Dayjs {
  */
 export function getWeekDateRange(weekNumber: number): { start: dayjs.Dayjs; end: dayjs.Dayjs } {
   const startDay = (weekNumber - 1) * 7 + 1
-  const endDay = Math.min(weekNumber * 7, 84)
+  const maxDays = getPlanWeeks() * 7
+  const endDay = Math.min(weekNumber * 7, maxDays)
   return {
     start: getDateByDayNumber(startDay),
     end: getDateByDayNumber(endDay)
@@ -149,23 +160,10 @@ export function getDaysRemaining(targetDate: dayjs.Dayjs | Date | string): numbe
 
 /**
  * 获取周次主题
+ * 已移除硬编码，改为返回默认格式，具体业务逻辑交由组件根据数据动态生成
  */
 export function getWeekTheme(weekNumber: number): { theme: string; category: string } {
-  const weekThemes: Record<number, { theme: string; category: string }> = {
-    1: { theme: '数组与哈希表', category: 'algorithm' },
-    2: { theme: '链表与栈', category: 'algorithm' },
-    3: { theme: '二叉树', category: 'algorithm' },
-    4: { theme: '动态规划入门', category: 'algorithm' },
-    5: { theme: 'Chrome 插件基础', category: 'chrome' },
-    6: { theme: 'Chrome 插件核心 API', category: 'chrome' },
-    7: { theme: 'AI 网页助手实战', category: 'chrome' },
-    8: { theme: 'AI 前端交互', category: 'ai' },
-    9: { theme: 'VSCode 插件基础', category: 'vscode' },
-    10: { theme: 'VSCode 插件核心功能', category: 'vscode' },
-    11: { theme: 'LSP 协议入门', category: 'lsp' },
-    12: { theme: '面试冲刺', category: 'interview' }
-  }
-  return weekThemes[weekNumber] || { theme: '准备中', category: 'pending' }
+  return { theme: `第 ${weekNumber} 周学习`, category: 'general' }
 }
 
 /**
@@ -175,6 +173,8 @@ export function getStudyProgress() {
   const today = dayjs()
   const dayNumber = getDayNumber(today)
   const weekNumber = getWeekNumber(today)
+  const totalWeeks = getPlanWeeks()
+  const totalDays = totalWeeks * 7
   
   // 计划还没开始
   if (!hasStarted()) {
@@ -196,7 +196,7 @@ export function getStudyProgress() {
     week: weekNumber,
     day: dayInWeek,
     totalDays: dayNumber,
-    percentage: Math.round((dayNumber / 84) * 100),
+    percentage: Math.round((dayNumber / totalDays) * 100),
     daysUntilStart: 0
   }
 }

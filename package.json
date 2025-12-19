@@ -9,9 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@langchain/community": "^1.1.1",
+    "@langchain/core": "^1.1.7",
+    "@langchain/openai": "^1.2.0",
     "@supabase/supabase-js": "^2.39.0",
     "dayjs": "^1.11.10",
     "echarts": "^5.4.3",
+    "lucide-vue-next": "^0.562.0",
     "pinia": "^2.1.7",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5"

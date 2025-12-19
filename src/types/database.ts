@@ -40,7 +40,7 @@ export interface Database {
           date: string;
           week: number;
           day: number;
-          type: "algorithm" | "study";
+          type: string;
           title: string;
           description: string | null;
           difficulty: "easy" | "medium" | "hard" | null;
@@ -103,6 +103,27 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["note_links"]["Insert"]>;
         Relationships: GenericRelationship[];
       };
+      task_resources: {
+        Row: {
+          id: string;
+          task_id: string;
+          title: string;
+          url: string;
+          type: string;
+          created_at: string;
+        };
+        Insert: Omit<
+          Database["public"]["Tables"]["task_resources"]["Row"],
+          "id" | "created_at"
+        > & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["task_resources"]["Insert"]
+        >;
+        Relationships: GenericRelationship[];
+      };
       extra_learnings: {
         Row: {
           id: string;
@@ -157,6 +178,8 @@ export interface Database {
 export type Task = Database["public"]["Tables"]["tasks"]["Row"];
 export type DailyReview = Database["public"]["Tables"]["daily_reviews"]["Row"];
 export type NoteLink = Database["public"]["Tables"]["note_links"]["Row"];
+export type TaskResource =
+  Database["public"]["Tables"]["task_resources"]["Row"];
 export type ExtraLearning =
   Database["public"]["Tables"]["extra_learnings"]["Row"];
 export type Milestone = Database["public"]["Tables"]["milestones"]["Row"];

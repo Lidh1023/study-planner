@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useTaskStore } from '@/stores/taskStore'
 import { useReviewStore } from '@/stores/reviewStore'
 import { useExtraStore } from '@/stores/extraStore'
@@ -17,35 +17,43 @@ const loading = ref(true)
 // 周进度数据
 const weeklyProgress = ref<{ week: number; completed: number; total: number; percentage: number }[]>([])
 
-// 分类统计
+// 分类统计 (动态)
 const categoryStats = computed(() => {
-  const stats = {
-    algorithm: { completed: 0, total: 0 },
-    study: { completed: 0, total: 0 }
-  }
+  const stats: Record<string, { completed: number; total: number }> = {}
   
   taskStore.tasks.forEach(task => {
-    if (task.type === 'algorithm') {
-      stats.algorithm.total++
-      if (task.completed) stats.algorithm.completed++
-    } else {
-      stats.study.total++
-      if (task.completed) stats.study.completed++
-    }
+    const type = task.type || 'other'
+    if (!stats[type]) stats[type] = { completed: 0, total: 0 }
+    stats[type].total++
+    if (task.completed) stats[type].completed++
   })
   
   return stats
 })
 
-// LeetCode 统计
+// LeetCode 统计 (动态目标)
 const leetcodeStats = computed(() => {
-  const stats = { easy: 0, medium: 0, hard: 0 }
+  const stats = { 
+    easy: { completed: 0, total: 0 }, 
+    medium: { completed: 0, total: 0 }, 
+    hard: { completed: 0, total: 0 } 
+  }
+  
   taskStore.tasks
-    .filter(t => t.type === 'algorithm' && t.completed)
+    .filter(t => t.type === 'algorithm')
     .forEach(t => {
-      if (t.difficulty) stats[t.difficulty]++
+      const difficulty = (t.difficulty || 'medium') as 'easy' | 'medium' | 'hard'
+      if (stats[difficulty]) {
+        stats[difficulty].total++
+        if (t.completed) stats[difficulty].completed++
+      }
     })
+    
   return stats
+})
+
+const hasAlgorithmTasks = computed(() => {
+  return taskStore.tasks.some(t => t.type === 'algorithm')
 })
 
 // 连续学习天数
@@ -79,10 +87,19 @@ onMounted(async () => {
   initCategoryChart()
 })
 
+// 监听数据变化刷新图表
+watch(categoryStats, () => {
+  initCategoryChart()
+})
+
 // 周进度柱状图
 const initWeeklyChart = () => {
   if (!weeklyChartRef.value) return
   
+  // Dispose existing chart if any
+  const existingChart = echarts.getInstanceByDom(weeklyChartRef.value)
+  if (existingChart) existingChart.dispose()
+
   const chart = echarts.init(weeklyChartRef.value)
   
   chart.setOption({
@@ -146,12 +163,57 @@ const initWeeklyChart = () => {
   window.addEventListener('resize', () => chart.resize())
 }
 
-// 分类完成率饼图
+// 分类完成率饼图 (动态生成)
 const initCategoryChart = () => {
   if (!categoryChartRef.value) return
+
+  const existingChart = echarts.getInstanceByDom(categoryChartRef.value)
+  if (existingChart) existingChart.dispose()
   
   const chart = echarts.init(categoryChartRef.value)
   
+  // 颜色映射
+  const colorMap: Record<string, string[]> = {
+    algorithm: ['#a855f7', '#581c87'], // purple
+    study: ['#0ea5e9', '#0c4a6e'],     // blue
+    project: ['#f59e0b', '#78350f'],   // amber
+    other: ['#10b981', '#064e3b']      // emerald
+  }
+
+  const seriesData: any[] = []
+  
+  Object.entries(categoryStats.value).forEach(([type, stat]) => {
+    const colors = colorMap[type] || colorMap['other']
+    const label = type === 'algorithm' ? '算法' : type === 'study' ? '学习' : type === 'project' ? '项目' : '其他'
+    
+    // 已完成部分
+    if (stat.completed > 0) {
+      seriesData.push({
+        value: stat.completed,
+        name: `${label}已完成`,
+        itemStyle: { color: colors[0] }
+      })
+    }
+    
+    // 未完成部分
+    if (stat.total - stat.completed > 0) {
+      seriesData.push({
+        value: stat.total - stat.completed,
+        name: `${label}未完成`,
+        itemStyle: { color: colors[1] }
+      })
+    }
+  })
+
+  // 如果没有数据，显示空状态
+  if (seriesData.length === 0) {
+    seriesData.push({
+      value: 1,
+      name: '暂无数据',
+      itemStyle: { color: '#334155' }
+    })
+  }
+
   chart.setOption({
     tooltip: {
       trigger: 'item',
@@ -161,7 +223,8 @@ const initCategoryChart = () => {
     },
     legend: {
       bottom: 0,
-      textStyle: { color: '#94a3b8' }
+      textStyle: { color: '#94a3b8' },
+      type: 'scroll'
     },
     series: [{
       type: 'pie',
@@ -180,28 +243,7 @@ const initCategoryChart = () => {
         fontSize: 16,
         color: '#f1f5f9'
       },
-      data: [
-        { 
-          value: categoryStats.value.algorithm.completed, 
-          name: '算法已完成',
-          itemStyle: { color: '#a855f7' }
-        },
-        { 
-          value: categoryStats.value.algorithm.total - categoryStats.value.algorithm.completed, 
-          name: '算法未完成',
-          itemStyle: { color: '#581c87' }
-        },
-        { 
-          value: categoryStats.value.study.completed, 
-          name: '学习已完成',
-          itemStyle: { color: '#0ea5e9' }
-        },
-        { 
-          value: categoryStats.value.study.total - categoryStats.value.study.completed, 
-          name: '学习未完成',
-          itemStyle: { color: '#0c4a6e' }
-        }
-      ]
+      data: seriesData
     }]
   })
 
@@ -254,58 +296,63 @@ const initCategoryChart = () => {
       </div>
     </div>
 
-    <!-- LeetCode 统计 -->
-    <div class="card">
-      <h3 class="text-lg font-semibold text-white mb-6">🧮 LeetCode 刷题统计</h3>
+    <!-- 算法/代码练习统计 (仅当有算法任务时显示) -->
+    <div v-if="hasAlgorithmTasks" class="card">
+      <h3 class="text-lg font-semibold text-white mb-6">🧮 算法/代码练习统计</h3>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- 简单 -->
         <div class="p-4 rounded-xl bg-green-500/10 border border-green-500/30">
           <div class="flex items-center justify-between">
             <span class="text-green-400">简单</span>
-            <span class="text-2xl font-bold text-green-400">{{ leetcodeStats.easy }}</span>
+            <span class="text-2xl font-bold text-green-400">{{ leetcodeStats.easy.completed }}</span>
           </div>
           <div class="progress-bar mt-3 bg-green-900/50">
             <div 
               class="h-full bg-green-500 rounded-full"
-              :style="{ width: `${Math.min(leetcodeStats.easy / 40 * 100, 100)}%` }"
+              :style="{ width: `${leetcodeStats.easy.total > 0 ? (leetcodeStats.easy.completed / leetcodeStats.easy.total * 100) : 0}%` }"
             ></div>
           </div>
-          <div class="text-xs text-green-400/60 mt-1">目标: 40 道</div>
+          <div class="text-xs text-green-400/60 mt-1">目标: {{ leetcodeStats.easy.total }} 道</div>
         </div>
 
+        <!-- 中等 -->
         <div class="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
           <div class="flex items-center justify-between">
             <span class="text-yellow-400">中等</span>
-            <span class="text-2xl font-bold text-yellow-400">{{ leetcodeStats.medium }}</span>
+            <span class="text-2xl font-bold text-yellow-400">{{ leetcodeStats.medium.completed }}</span>
           </div>
           <div class="progress-bar mt-3 bg-yellow-900/50">
             <div 
               class="h-full bg-yellow-500 rounded-full"
-              :style="{ width: `${Math.min(leetcodeStats.medium / 60 * 100, 100)}%` }"
+              :style="{ width: `${leetcodeStats.medium.total > 0 ? (leetcodeStats.medium.completed / leetcodeStats.medium.total * 100) : 0}%` }"
             ></div>
           </div>
-          <div class="text-xs text-yellow-400/60 mt-1">目标: 60 道</div>
+          <div class="text-xs text-yellow-400/60 mt-1">目标: {{ leetcodeStats.medium.total }} 道</div>
         </div>
 
+        <!-- 困难 -->
         <div class="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
           <div class="flex items-center justify-between">
             <span class="text-red-400">困难</span>
-            <span class="text-2xl font-bold text-red-400">{{ leetcodeStats.hard }}</span>
+            <span class="text-2xl font-bold text-red-400">{{ leetcodeStats.hard.completed }}</span>
           </div>
           <div class="progress-bar mt-3 bg-red-900/50">
             <div 
               class="h-full bg-red-500 rounded-full"
-              :style="{ width: `${Math.min(leetcodeStats.hard / 20 * 100, 100)}%` }"
+              :style="{ width: `${leetcodeStats.hard.total > 0 ? (leetcodeStats.hard.completed / leetcodeStats.hard.total * 100) : 0}%` }"
             ></div>
           </div>
-          <div class="text-xs text-red-400/60 mt-1">目标: 20 道</div>
+          <div class="text-xs text-red-400/60 mt-1">目标: {{ leetcodeStats.hard.total }} 道</div>
         </div>
       </div>
 
       <div class="text-center">
         <div class="text-4xl font-bold text-white">
-          {{ leetcodeStats.easy + leetcodeStats.medium + leetcodeStats.hard }}
-          <span class="text-lg text-dark-400 font-normal">/ 120</span>
+          {{ leetcodeStats.easy.completed + leetcodeStats.medium.completed + leetcodeStats.hard.completed }}
+          <span class="text-lg text-dark-400 font-normal">
+            / {{ leetcodeStats.easy.total + leetcodeStats.medium.total + leetcodeStats.hard.total }}
+          </span>
         </div>
         <div class="text-dark-400 mt-1">算法题目完成</div>
       </div>
@@ -338,4 +385,3 @@ const initCategoryChart = () => {
     </div>
   </div>
 </template>
-

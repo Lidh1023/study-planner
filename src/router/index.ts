@@ -15,6 +15,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '学习大纲', icon: 'roadmap' }
   },
   {
+    path: '/plan',
+    name: 'PlanGenerator',
+    component: () => import('@/views/PlanGenerator.vue'),
+    meta: { title: 'AI 规划', icon: 'ai' }
+  },
+  {
     path: '/tasks',
     name: 'DailyTask',
     component: () => import('@/views/DailyTask.vue'),
@@ -49,6 +55,12 @@ const routes: RouteRecordRaw[] = [
     name: 'ExtraLearning',
     component: () => import('@/views/ExtraLearning.vue'),
     meta: { title: '额外学习', icon: 'extra' }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('@/views/Settings.vue'),
+    meta: { title: '系统设置', icon: 'settings' }
   }
 ]
 
