@@ -1,0 +1,182 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg-primary: #0f172a;
+  --color-bg-secondary: #1e293b;
+  --color-bg-tertiary: #334155;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-accent: #0ea5e9;
+  --color-accent-hover: #38bdf8;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Card styles */
+.card {
+  @apply glass rounded-2xl p-6 transition-all duration-300;
+}
+
+.card:hover {
+  @apply border-primary-500/30;
+  box-shadow: 0 0 30px rgba(14, 165, 233, 0.1);
+}
+
+/* Button styles */
+.btn {
+  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+}
+
+.btn-primary {
+  @apply bg-primary-600 text-white hover:bg-primary-500 active:scale-95;
+}
+
+.btn-secondary {
+  @apply bg-dark-700 text-dark-200 hover:bg-dark-600 active:scale-95;
+}
+
+.btn-ghost {
+  @apply text-dark-300 hover:text-white hover:bg-dark-700/50;
+}
+
+/* Input styles */
+.input {
+  @apply w-full px-4 py-3 bg-dark-800 border border-dark-600 rounded-lg text-white placeholder-dark-400 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all;
+}
+
+/* Checkbox styles */
+.checkbox {
+  @apply w-5 h-5 rounded border-2 border-dark-500 bg-dark-800 checked:bg-primary-600 checked:border-primary-600 cursor-pointer transition-all;
+}
+
+/* Progress bar */
+.progress-bar {
+  @apply h-2 bg-dark-700 rounded-full overflow-hidden;
+}
+
+.progress-bar-fill {
+  @apply h-full bg-gradient-to-r from-primary-600 to-accent-500 rounded-full transition-all duration-500;
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(14, 165, 233, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(14, 165, 233, 0.5);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Sidebar active state */
+.nav-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-xl text-dark-300 hover:text-white hover:bg-dark-700/50 transition-all cursor-pointer;
+}
+
+.nav-item.active {
+  @apply text-white bg-primary-600/20 border-l-4 border-primary-500;
+}
+
+/* Tag styles */
+.tag {
+  @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium;
+}
+
+.tag-easy {
+  @apply bg-green-500/20 text-green-400;
+}
+
+.tag-medium {
+  @apply bg-yellow-500/20 text-yellow-400;
+}
+
+.tag-hard {
+  @apply bg-red-500/20 text-red-400;
+}
+
+.tag-algorithm {
+  @apply bg-purple-500/20 text-purple-400;
+}
+
+.tag-study {
+  @apply bg-blue-500/20 text-blue-400;
+}
+
+/* Platform tags */
+.tag-yuque {
+  @apply bg-emerald-500/20 text-emerald-400;
+}
+
+.tag-notion {
+  @apply bg-slate-500/20 text-slate-300;
+}
+
+.tag-feishu {
+  @apply bg-blue-500/20 text-blue-400;
+}
+
+.tag-other {
+  @apply bg-gray-500/20 text-gray-400;
+}
+
